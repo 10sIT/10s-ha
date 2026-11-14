@@ -1,0 +1,72 @@
+withdraw_device:
+  name: Withdraw 10s Device
+  description: >
+    Ask 10s to withdraw a registered metered device. It shows as "withdrawing"
+    until 10s's withdrawal takes effect, then as "withdrawn". The device stays
+    listed until it is removed.
+  fields:
+    metered_device_id:
+      name: Metered device ID
+      description: >
+        The metered device's id: the `id` of its row in the 10s Dashboard
+        sensor's `metered_devices` attribute. Not a Home Assistant
+        device-registry id.
+      required: true
+      example: 5f6e4b19d0a94def9c3a27b8
+
+re_register_device:
+  name: Register 10s Device
+  description: >
+    Ask 10s to register a withdrawn metered device again. It shows as
+    "registering" until 10s's registration takes effect, then as "registered".
+    10s makes a registration take effect at 00:00 Brussels time two days
+    after the request's date, so the wait is one to two days.
+    Fails if 10s cannot be reached or refuses the device.
+  fields:
+    metered_device_id:
+      name: Metered device ID
+      description: >
+        The metered device's id: the `id` of its row in the 10s Dashboard
+        sensor's `metered_devices` attribute. Not a Home Assistant
+        device-registry id.
+      required: true
+      example: 5f6e4b19d0a94def9c3a27b8
+
+remove_device:
+  name: Remove 10s Device
+  description: >
+    Permanently remove a withdrawn metered device from the installation and
+    drop its registration row. A device that is still registering, registered or
+    withdrawing is refused — withdraw it first.
+  fields:
+    metered_device_id:
+      name: Metered device ID
+      description: >
+        The metered device's id: the `id` of its row in the 10s Dashboard
+        sensor's `metered_devices` attribute. Not a Home Assistant
+        device-registry id.
+      required: true
+      example: 5f6e4b19d0a94def9c3a27b8
+
+set_device_color:
+  name: Set 10s Device Colour
+  description: >
+    Set the colour a metered device is drawn in on the 10s panel's chart, or
+    clear it to fall back to the automatic palette colour. Display only — it is
+    allowed in every status and nothing is sent to 10s.
+  fields:
+    metered_device_id:
+      name: Metered device ID
+      description: >
+        The metered device's id: the `id` of its row in the 10s Dashboard
+        sensor's `metered_devices` attribute. Not a Home Assistant
+        device-registry id.
+      required: true
+      example: 5f6e4b19d0a94def9c3a27b8
+    color:
+      name: Colour
+      description: >
+        A hex colour as #rrggbb, or an empty string to restore the automatic
+        palette colour.
+      required: true
+      example: "#3366cc"

@@ -1,0 +1,33 @@
+name: Release
+
+# Published from the private source repository on each v* tag. Builds tens.zip
+# (the content of custom_components/tens, which hacs.json names) and creates the
+# GitHub release HACS installs from. A tag with a hyphen (v0.2.0-beta.1) is a
+# pre-release, shown in HACS only to users who enable beta versions.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: tens.zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build tens.zip
+        working-directory: custom_components/tens
+        run: zip -r -q "$GITHUB_WORKSPACE/tens.zip" .
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            flags+=(--prerelease)
+          fi
+          gh release create "$GITHUB_REF_NAME" tens.zip \
+            --title "$GITHUB_REF_NAME" --notes "10s integration $GITHUB_REF_NAME." "${flags[@]}"

@@ -1,0 +1,13 @@
+{
+  "domain": "tens",
+  "name": "10s",
+  "after_dependencies": ["recorder"],
+  "codeowners": ["@LaurisK", "@sebastienrenaud10s"],
+  "config_flow": true,
+  "dependencies": ["panel_custom", "http"],
+  "documentation": "https://github.com/10sIT/10s-ha",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/10sIT/10s-ha/issues",
+  "single_config_entry": true,
+  "version": "0.1.0-beta.1"
+}

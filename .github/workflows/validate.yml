@@ -1,0 +1,32 @@
+name: Validate
+
+# HACS and hassfest checks on the published tree. The source repository runs
+# every other gate; the HACS action refuses private repositories, so it runs here.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  hacs:
+    name: HACS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+          # The integration domain is not registered in home-assistant/brands, so
+          # the brands check would fail. Temporary, documented exception -- remove
+          # once the domain is submitted upstream.
+          ignore: brands
+
+  hassfest:
+    name: hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master

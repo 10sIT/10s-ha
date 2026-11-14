@@ -1,0 +1,353 @@
+{
+  "config": {
+    "step": {
+      "hub": {
+        "title": "10s setup",
+        "description": "{status}\n\nLog in to 10s (→) with the registration token 10s gave you, then link the metered devices under it. **✓ Check and save** creates the integration once you are logged in.\n\nThe login is kept on this Home Assistant as soon as 10s accepts it, so closing this window before you save does not lose it: the next setup opens logged in.",
+        "menu_options": {
+          "tens": "10s account →",
+          "verify": "✓ Check and save"
+        },
+        "menu_option_descriptions": {
+          "tens": "Log in to 10s and link the metered devices it registers."
+        }
+      },
+      "verify": {
+        "title": "Check your setup",
+        "description": "{summary}\n\nConfirm saves the configuration; the ✕ option returns to the menu without saving.",
+        "data": {
+          "go_to": "On Confirm"
+        },
+        "submit": "Confirm"
+      },
+      "tens_login": {
+        "title": "Log in to 10s",
+        "description": "Enter the registration token you received from 10s; it tells 10s which contract this installation belongs to. The token works once: 10s answers with this installation's credentials, which are saved straight away, so closing this window afterwards does not lose them.",
+        "data": {
+          "registration_token": "Registration token",
+          "go_to": "On Confirm"
+        },
+        "submit": "Confirm",
+        "data_description": {
+          "registration_token": "The one-time token 10s issued for this installation.",
+          "go_to": "Confirm redeems the token and saves the credentials; the ✕ option leaves without redeeming it."
+        }
+      },
+      "tens_menu": {
+        "title": "10s account",
+        "description": "Logged in as **{account}**.\n\n{status}",
+        "menu_options": {
+          "devices": "Metered devices →",
+          "tens_logout": "✕ Log out of 10s",
+          "hub": "← Back to setup"
+        },
+        "menu_option_descriptions": {
+          "tens_logout": "Removes the 10s account, the linked devices and their recorded readings from this installation. Nothing is sent to 10s: its registration of this installation stays on the 10s side, so logging in again needs a new registration token, and 10s may answer that this installation is already registered until 10s resolves that. Every device must be withdrawn first."
+        }
+      },
+      "devices": {
+        "title": "Metered devices",
+        "description": "The meters whose energy 10s collects — as many as you like. Devices are monitored only: 10s reads their meters and never controls them.\n\n**Linked devices**\n{devices}{held}",
+        "menu_options": {
+          "add_device": "+ Add a device →",
+          "add_another_device": "+ Add another device →",
+          "edit_device": "Edit a device →",
+          "remove_devices": "Remove devices →",
+          "hub": "← Back to setup"
+        }
+      },
+      "add_device": {
+        "title": "Add a device",
+        "description": "Pick the Home Assistant device that measures it, e.g. the Shelly on the heat pump, and say what it is. Its energy meters are filled in on the next page.",
+        "data": {
+          "ha_device": "Device",
+          "device_category": "What is it?",
+          "go_to": "On Confirm"
+        },
+        "data_description": {
+          "ha_device": "Devices with an energy or a power sensor are listed. A sensor defined in YAML belongs to no device: recreate it as a helper attached to the device to pick it here.",
+          "device_category": "Decides which meters the next page asks for.",
+          "go_to": "Confirm opens the device's details; the ✕ option returns to the menu."
+        },
+        "submit": "Confirm"
+      },
+      "add_device_details": {
+        "title": "Add a device",
+        "description": "Reading from **{source}**. Check the name and the meters, then Confirm.{warning}",
+        "data": {
+          "device_name": "Name",
+          "meter_consumed": "Energy meters (kWh)",
+          "meter_returned": "Returned energy meters (kWh)",
+          "go_to": "On Confirm"
+        },
+        "data_description": {
+          "meter_consumed": "The counters of the energy this device uses. Several are added together — e.g. a heat pump's heating and hot-water counters. The likeliest are picked already.",
+          "meter_returned": "A battery's discharge counter — a battery needs one, even if it reads zero. A charger needs one only if it discharges a car back into the house. Not picked for you: choose a different counter of this device than the one above. Reported separately, never subtracted.",
+          "go_to": "Confirm saves this page and returns to the menu; the ✕ option leaves it unchanged."
+        },
+        "submit": "Confirm"
+      },
+      "edit_device": {
+        "title": "Edit a device",
+        "description": "Pick the device to change.{held}",
+        "data": {
+          "edit_device_id": "Device",
+          "go_to": "On Confirm"
+        },
+        "submit": "Confirm",
+        "data_description": {
+          "go_to": "Confirm opens the chosen device's settings; the ✕ option returns to the menu."
+        }
+      },
+      "edit_device_source": {
+        "title": "Edit {name}",
+        "description": "Pick the Home Assistant device that measures it and what it is. Picking another device or kind picks its meters again on the next page.",
+        "data": {
+          "ha_device": "Device",
+          "device_category": "What is it?",
+          "go_to": "On Confirm"
+        },
+        "data_description": {
+          "ha_device": "Devices with an energy or a power sensor are listed. A sensor defined in YAML belongs to no device: recreate it as a helper attached to the device to pick it here.",
+          "device_category": "Decides which meters the next page asks for.",
+          "go_to": "Confirm opens the device's details; the ✕ option returns to the menu."
+        },
+        "submit": "Confirm"
+      },
+      "edit_device_details": {
+        "title": "Edit {name}",
+        "description": "Reading from **{source}**. Change the device's name or meters. It keeps its place in the 10s panel.{warning}",
+        "data": {
+          "device_name": "Name",
+          "meter_consumed": "Energy meters (kWh)",
+          "meter_returned": "Returned energy meters (kWh)",
+          "go_to": "On Confirm"
+        },
+        "data_description": {
+          "meter_consumed": "The counters of the energy this device uses. Several are added together — e.g. a heat pump's heating and hot-water counters. The likeliest are picked already.",
+          "meter_returned": "A battery's discharge counter — a battery needs one, even if it reads zero. A charger needs one only if it discharges a car back into the house. Not picked for you: choose a different counter of this device than the one above. Reported separately, never subtracted.",
+          "go_to": "Confirm saves this page and returns to the menu; the ✕ option leaves it unchanged."
+        },
+        "submit": "Confirm"
+      },
+      "remove_devices": {
+        "title": "Remove devices",
+        "description": "Tick the devices to unlink from this installation.{held}",
+        "data": {
+          "remove_device_ids": "Devices to remove",
+          "go_to": "On Confirm"
+        },
+        "submit": "Confirm",
+        "data_description": {
+          "go_to": "Confirm saves this page and returns to the menu; the ✕ option leaves it unchanged."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Log in to 10s again",
+        "description": "10s stopped accepting this installation's login for **{account}**. Readings are still being collected and will be sent once you log in again. Enter a new registration token from 10s. Your devices stay linked; they keep their 10s registration as long as 10s accepts the new token for this same installation.",
+        "data": {
+          "registration_token": "Registration token"
+        },
+        "data_description": {
+          "registration_token": "A new one-time token issued by 10s for this installation."
+        },
+        "submit": "Confirm"
+      }
+    },
+    "error": {
+      "invalid_token": "10s {environment} did not accept this registration token: it has expired, was already used, or is unknown to 10s. Check the token you entered; if it is right, ask 10s — only 10s can check the token or issue a new one.",
+      "already_registered": "10s {environment} refused this registration token for one of two reasons it does not tell apart: it already holds an app registration for this Home Assistant installation under this contract (10s keeps it after a logout here), or the contract is not active. Ask 10s to resolve it.",
+      "redeem_rejected": "10s {environment} refused the login. Check the registration token; if it is right, ask 10s to resolve it.",
+      "cannot_connect": "Could not reach the 10s {environment} server. Check this Home Assistant's internet connection and try again; if 10s stays unreachable, ask 10s.",
+      "device_name_required": "Give the device a name, e.g. \"Heat pump\".",
+      "device_name_duplicate": "A device with this name is already linked — use a different name.",
+      "device_no_meter": "This device has no energy or power sensor 10s can use. Pick another device.",
+      "device_same_meter": "Each counter can be used only once — grid import and grid export need two different ones.",
+      "device_entity_linked": "This sensor is already linked to another device.",
+      "device_meters_linked": "Every energy counter of this device is already linked to another device.",
+      "device_meter_not_counter": "**{sensor}** is an energy sensor but not a running counter (its state class is not `total_increasing` or `total`), so 10s cannot use it. Set the state class where the sensor is defined — e.g. its ESPHome or template YAML — then pick the device again.",
+      "device_meter_disabled": "**{sensor}** is this device's energy counter, but it is disabled or hidden. Enable it under Settings → Entities, then pick the device again.",
+      "device_power_only": "This device reports power (**{sensor}**) but no energy counter. Add an *Integral (Riemann sum)* helper from that sensor under Settings → Helpers (metric prefix k, time unit hours): it appears on this device and can be picked here.",
+      "required": "Fill in this field."
+    },
+    "abort": {
+      "reauth_successful": "Logged in to 10s again.",
+      "single_instance_allowed": "10s is already set up. Only one 10s entry per Home Assistant is supported; change it under its Configure menu."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "10s settings",
+        "description": "{status}\n\n✓ set · still needed ○ optional or not used\n\nOpen a section (→) to add it to this installation or change it. Every page ends with a dropdown: **✓ save and go back** (the default) or **✕ discard and go back**. **✓ Check and save** shows what 10s will receive, then saves once every section you added is complete.",
+        "menu_options": {
+          "tens": "10s account →",
+          "verify": "✓ Check and save"
+        },
+        "menu_option_descriptions": {
+          "tens": "Log in to 10s and link the metered devices it registers."
+        }
+      },
+      "verify": {
+        "title": "Check your setup",
+        "description": "{summary}\n\nConfirm saves the configuration; the ✕ option returns to the menu without saving.",
+        "data": {
+          "go_to": "On Confirm"
+        },
+        "submit": "Confirm"
+      },
+      "tens_login": {
+        "title": "Log in to 10s",
+        "description": "Enter the registration token you received from 10s; it tells 10s which contract this installation belongs to. The token works once: 10s answers with this installation's credentials, which are saved straight away, so closing this window afterwards does not lose them.",
+        "data": {
+          "registration_token": "Registration token",
+          "go_to": "On Confirm"
+        },
+        "submit": "Confirm",
+        "data_description": {
+          "registration_token": "The one-time token 10s issued for this installation.",
+          "go_to": "Confirm redeems the token and saves the credentials; the ✕ option leaves without redeeming it."
+        }
+      },
+      "tens_menu": {
+        "title": "10s account",
+        "description": "Logged in as **{account}**.\n\n{status}",
+        "menu_options": {
+          "devices": "Metered devices →",
+          "tens_logout": "✕ Log out of 10s",
+          "init": "← Back to settings"
+        },
+        "menu_option_descriptions": {
+          "tens_logout": "Removes the 10s account, the linked devices and their recorded readings from this installation. Nothing is sent to 10s: its registration of this installation stays on the 10s side, so logging in again needs a new registration token, and 10s may answer that this installation is already registered until 10s resolves that. Every device must be withdrawn first."
+        }
+      },
+      "devices": {
+        "title": "Metered devices",
+        "description": "The meters whose energy 10s collects — as many as you like. Devices are monitored only: 10s reads their meters and never controls them.\n\n**Linked devices**\n{devices}{held}",
+        "menu_options": {
+          "add_device": "+ Add a device →",
+          "add_another_device": "+ Add another device →",
+          "edit_device": "Edit a device →",
+          "remove_devices": "Remove devices →",
+          "init": "← Back to settings"
+        }
+      },
+      "add_device": {
+        "title": "Add a device",
+        "description": "Pick the Home Assistant device that measures it, e.g. the Shelly on the heat pump, and say what it is. Its energy meters are filled in on the next page.",
+        "data": {
+          "ha_device": "Device",
+          "device_category": "What is it?",
+          "go_to": "On Confirm"
+        },
+        "data_description": {
+          "ha_device": "Devices with an energy or a power sensor are listed. A sensor defined in YAML belongs to no device: recreate it as a helper attached to the device to pick it here.",
+          "device_category": "Decides which meters the next page asks for.",
+          "go_to": "Confirm opens the device's details; the ✕ option returns to the menu."
+        },
+        "submit": "Confirm"
+      },
+      "add_device_details": {
+        "title": "Add a device",
+        "description": "Reading from **{source}**. Check the name and the meters, then Confirm.{warning}",
+        "data": {
+          "device_name": "Name",
+          "meter_consumed": "Energy meters (kWh)",
+          "meter_returned": "Returned energy meters (kWh)",
+          "go_to": "On Confirm"
+        },
+        "data_description": {
+          "meter_consumed": "The counters of the energy this device uses. Several are added together — e.g. a heat pump's heating and hot-water counters. The likeliest are picked already.",
+          "meter_returned": "A battery's discharge counter — a battery needs one, even if it reads zero. A charger needs one only if it discharges a car back into the house. Not picked for you: choose a different counter of this device than the one above. Reported separately, never subtracted.",
+          "go_to": "Confirm saves this page and returns to the menu; the ✕ option leaves it unchanged."
+        },
+        "submit": "Confirm"
+      },
+      "edit_device": {
+        "title": "Edit a device",
+        "description": "Pick the device to change.{held}",
+        "data": {
+          "edit_device_id": "Device",
+          "go_to": "On Confirm"
+        },
+        "submit": "Confirm",
+        "data_description": {
+          "go_to": "Confirm opens the chosen device's settings; the ✕ option returns to the menu."
+        }
+      },
+      "edit_device_source": {
+        "title": "Edit {name}",
+        "description": "Pick the Home Assistant device that measures it and what it is. Picking another device or kind picks its meters again on the next page.",
+        "data": {
+          "ha_device": "Device",
+          "device_category": "What is it?",
+          "go_to": "On Confirm"
+        },
+        "data_description": {
+          "ha_device": "Devices with an energy or a power sensor are listed. A sensor defined in YAML belongs to no device: recreate it as a helper attached to the device to pick it here.",
+          "device_category": "Decides which meters the next page asks for.",
+          "go_to": "Confirm opens the device's details; the ✕ option returns to the menu."
+        },
+        "submit": "Confirm"
+      },
+      "edit_device_details": {
+        "title": "Edit {name}",
+        "description": "Reading from **{source}**. Change the device's name or meters. It keeps its place in the 10s panel.{warning}",
+        "data": {
+          "device_name": "Name",
+          "meter_consumed": "Energy meters (kWh)",
+          "meter_returned": "Returned energy meters (kWh)",
+          "go_to": "On Confirm"
+        },
+        "data_description": {
+          "meter_consumed": "The counters of the energy this device uses. Several are added together — e.g. a heat pump's heating and hot-water counters. The likeliest are picked already.",
+          "meter_returned": "A battery's discharge counter — a battery needs one, even if it reads zero. A charger needs one only if it discharges a car back into the house. Not picked for you: choose a different counter of this device than the one above. Reported separately, never subtracted.",
+          "go_to": "Confirm saves this page and returns to the menu; the ✕ option leaves it unchanged."
+        },
+        "submit": "Confirm"
+      },
+      "remove_devices": {
+        "title": "Remove devices",
+        "description": "Tick the devices to unlink from this installation.{held}",
+        "data": {
+          "remove_device_ids": "Devices to remove",
+          "go_to": "On Confirm"
+        },
+        "submit": "Confirm",
+        "data_description": {
+          "go_to": "Confirm saves this page and returns to the menu; the ✕ option leaves it unchanged."
+        }
+      }
+    },
+    "error": {
+      "invalid_token": "10s {environment} did not accept this registration token: it has expired, was already used, or is unknown to 10s. Check the token you entered; if it is right, ask 10s — only 10s can check the token or issue a new one.",
+      "already_registered": "10s {environment} refused this registration token for one of two reasons it does not tell apart: it already holds an app registration for this Home Assistant installation under this contract (10s keeps it after a logout here), or the contract is not active. Ask 10s to resolve it.",
+      "redeem_rejected": "10s {environment} refused the login. Check the registration token; if it is right, ask 10s to resolve it.",
+      "cannot_connect": "Could not reach the 10s {environment} server. Check this Home Assistant's internet connection and try again; if 10s stays unreachable, ask 10s.",
+      "device_name_required": "Give the device a name, e.g. \"Heat pump\".",
+      "device_name_duplicate": "A device with this name is already linked — use a different name.",
+      "device_no_meter": "This device has no energy or power sensor 10s can use. Pick another device.",
+      "device_same_meter": "Each counter can be used only once — grid import and grid export need two different ones.",
+      "device_entity_linked": "This sensor is already linked to another device.",
+      "device_meters_linked": "Every energy counter of this device is already linked to another device.",
+      "device_meter_not_counter": "**{sensor}** is an energy sensor but not a running counter (its state class is not `total_increasing` or `total`), so 10s cannot use it. Set the state class where the sensor is defined — e.g. its ESPHome or template YAML — then pick the device again.",
+      "device_meter_disabled": "**{sensor}** is this device's energy counter, but it is disabled or hidden. Enable it under Settings → Entities, then pick the device again.",
+      "device_power_only": "This device reports power (**{sensor}**) but no energy counter. Add an *Integral (Riemann sum)* helper from that sensor under Settings → Helpers (metric prefix k, time unit hours): it appears on this device and can be picked here.",
+      "required": "Fill in this field."
+    }
+  },
+  "issues": {
+    "silent_meter": {
+      "title": "{device} has stopped reporting",
+      "description": "10s has had no meter reading from **{device}** since {since}. Check that its energy sensor is still available under Settings → Entities (a device that dropped off the network, was renamed or was disabled reports nothing), and that the device is online. This clears by itself once readings resume, or when the device is withdrawn from 10s."
+    },
+    "upload_stalled": {
+      "title": "{device}'s readings are not reaching 10s",
+      "description": "Readings from **{device}** have been waiting to be sent to 10s since {since}. Home Assistant contacts 10s when it starts and then every 8 hours, and each contact sends everything owed; these have not gone through. Either 10s cannot be reached (check this Home Assistant's internet connection), or 10s is refusing them — a refusal is logged as a warning under the 10s integration. Nothing is lost while they wait: the readings are kept for 72 hours and go out with the first contact that gets through, and reloading the 10s integration makes one at once. This clears by itself once they go through, or when the device is withdrawn from 10s."
+    },
+    "history_given_up": {
+      "title": "10s will not take {device}'s recorded history",
+      "description": "10s refused the recorded history of **{device}** four times, so it is no longer offered; the refusal is logged as a warning under the 10s integration. Its live readings are not affected and keep going to 10s. To send the history again: fix the cause, withdraw the device and, once it reads withdrawn, register it again — a new registration offers its history afresh. This clears by itself when the device is withdrawn or removed."
+    }
+  }
+}
