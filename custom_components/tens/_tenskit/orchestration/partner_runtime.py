@@ -4,15 +4,17 @@ With no account stored the runtime is inactive; every read goes through :meth:`_
 what the partner last reported, nothing here invents a status. Each reconcile (:meth:`PartnerRuntime.async_sync`) also
 refreshes the categories the account may register, and registering a device outside them is refused before the partner
 is called. The last step of a reconcile uploads what each device is owed, moving its watermark only on the partner's
-``202``; a refused push is held back for :data:`REJECTED_RETRY`. A withdrawn device still sends the slots up to its
-``effectiveTo`` that it owes: more than the effective window is acceptable, a gap is not. The history dump is owed once
-per registration until the partner accepts it, and given up after ``MAX_BACKFILL_REFUSALS`` refusals.
+``202``; a refused push is held back for :data:`REJECTED_RETRY`. The live readings go from the registration request
+on, while the device still reads ``registering``. A withdrawn device still sends the slots up to its ``effectiveTo``
+that it owes: more than the effective window is acceptable, a gap is not. The history dump is owed once per
+registration until the partner accepts it: first offered by a job the register action starts once the partner has
+answered, then at each contact, and given up after ``MAX_BACKFILL_REFUSALS`` refusals.
 """
 from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Coroutine, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import Enum
@@ -22,6 +24,7 @@ from ..contract import (
     CONF_METERED_DEVICES,
     CONF_TENS_ACCOUNT,
     TENS_STATUS_REGISTERED,
+    TENS_STATUS_REGISTERING,
     TENS_STATUS_WITHDRAWING,
     TENS_STATUS_WITHDRAWN,
     DeviceSlot,
@@ -40,6 +43,7 @@ from ..outbound.partners import (
     METRIC_PRODUCTION,
     SLOT_GRANULARITY,
     MeasurementBlock,
+    PartnerAuthError,
     PartnerClient,
     PartnerConnectionError,
     PartnerRejectedError,
@@ -71,9 +75,9 @@ from .slot_log import SlotLog, read_device, stalled_devices
 
 _LOGGER = logging.getLogger(__name__)
 
-# That 10s takes data while ``withdrawing`` and none before the device is effective are assumptions the spec does not
-# settle. A ``registering`` device's readings wait in the archive and go with its first upload.
-UPLOAD_STATUSES = frozenset({TENS_STATUS_REGISTERED, TENS_STATUS_WITHDRAWING})
+# 10s takes live data from the registration request on, before ``effectiveFrom`` (its request of 2026-11-13); that it
+# takes data while ``withdrawing`` is an assumption the spec does not settle.
+UPLOAD_STATUSES = frozenset({TENS_STATUS_REGISTERING, TENS_STATUS_REGISTERED, TENS_STATUS_WITHDRAWING})
 # A refusal is an encoder bug or a device 10s no longer holds, so resending at once would only repeat it. The hold is on
 # the partner id that was refused: a new id lifts it at once.
 REJECTED_RETRY = timedelta(hours=1)
@@ -120,6 +124,7 @@ class PartnerRuntime:
         client: PartnerClient,
         request_refresh: Callable[[], Awaitable[None]],
         update_options: Callable[[dict], Awaitable[None]],
+        start_job: Callable[[Coroutine[Any, Any, None]], object],
         hass: Any,
         max_request_values: int = MAX_BLOCK_VALUES,
     ) -> None:
@@ -132,6 +137,10 @@ class PartnerRuntime:
             client: The partner's client, the authority on every status.
             request_refresh: Tells the host an action changed the state.
             update_options: Rewrites the entry's options, so a removal survives a reload.
+            start_job: Runs a job the runtime does not await (the history push a register starts), keeping a reference
+                to it, for no longer than the entry the runtime belongs to: the job writes the registration mirror, so
+                one outliving a reload would be a second writer of the same store. Home Assistant: the entry's
+                background task, cancelled with the entry.
             hass: Home Assistant instance, through which the collector reads the meters and the dump the recorder.
             max_request_values: The most values one upload request carries, both metric types together; a test seam.
         """
@@ -142,6 +151,7 @@ class PartnerRuntime:
         self._request_refresh = request_refresh
         self._update_options = update_options
         self._max_request_values = max_request_values
+        self._start_job = start_job
         # Every change awaits the partner between reading the mirror and saving it, so without this a register or a
         # logout landing inside a reconcile is overwritten by the reconcile's older answer. Released before the refresh
         # request: a host whose refresh reconciles would otherwise wait on itself (asyncio.Lock is not re-entrant).
@@ -333,7 +343,7 @@ class PartnerRuntime:
         if changed:
             await self._save(registrations)
             saved = True
-        # Last, against the statuses just recorded: a device this listing shows effective is uploaded in this contact,
+        # Last, against the statuses just recorded: a status this listing changed decides the upload in this contact,
         # not the next.
         await self._async_upload(now)
         return saved
@@ -459,8 +469,9 @@ class PartnerRuntime:
     async def _async_upload(self, now: datetime) -> int:
         """Push every uploadable device's owed readings to the partner; the caller holds the lock.
 
-        A device is uploaded while it is ``registered`` or ``withdrawing`` with a known ``remote_id``: first its history
-        dump if still owed, then its live readings. Once ``withdrawn``, only the readings up to its ``effectiveTo`` go.
+        A device is uploaded while it is ``registering``, ``registered`` or ``withdrawing`` with a known ``remote_id``:
+        first its history dump if still owed, then its live readings. Once ``withdrawn``, only the readings up to its
+        ``effectiveTo`` go.
         An unreachable partner ends the pass, since every other device would fail the same way. A refusal holds back
         only what was refused, for :data:`REJECTED_RETRY` or until the partner reports the device under another id.
 
@@ -695,7 +706,8 @@ class PartnerRuntime:
         """Enter a withdrawn device into the registration cycle again.
 
         Only a device whose category the partner lists as eligible is sent; with no list cached the partner is asked
-        first. Live readings are owed from the request on, never from an earlier registration's watermark.
+        first. Live readings are owed from the request on, never from an earlier registration's watermark. Once the
+        partner has answered, the device's history push is started and not awaited.
 
         Args:
             device_id: The withdrawn device uuid.
@@ -712,14 +724,43 @@ class PartnerRuntime:
             raise ValueError(f"no metered device with id {device_id!r}")
         async with self._lock:
             await self._async_register(account, client, device, now)
+        self._start_job(self._async_push_new_history(device_id, now))
         await self._request_refresh()
+
+    async def _async_push_new_history(self, device_id: str, now: datetime) -> None:
+        """Offer a new registration's history right after the partner answered the register call.
+
+        Started by the register action rather than awaited, so the action returns without waiting for the recorder read
+        and the requests; it takes the lock as an upload pass does. A push that fails leaves the registration standing
+        and the dump owed, for the next contact's upload pass to offer.
+
+        Args:
+            now: The instant of the register action; the dump itself is as of the registration's noted moment.
+        """
+        async with self._lock:
+            # Under the lock: a logout that got in first has dropped the account, and nothing is pushed.
+            account, client = self.account, self._client
+            if account is None:
+                return
+            state = self._registrations().rows.get(device_id)
+            device = next((d for d in self.devices() if d.id == device_id), None)
+            if device is None or state is None or state.remote_id is None or upload_end(state) is not None:
+                return
+            remote_id = state.remote_id
+            try:
+                await self._async_push_unless_held(
+                    _Push.HISTORY, device, remote_id, now,
+                    lambda: self._async_backfill_device(account, client, device, remote_id, now),
+                )
+            except (PartnerConnectionError, PartnerAuthError) as err:
+                _LOGGER.debug("The history of %s did not reach 10s (%r); it goes at the next contact", device.name, err)
 
     async def _async_register(
         self, account: PartnerAccount, client: PartnerClient, device: MeteredDevice, now: datetime,
     ) -> None:
         """Register a withdrawn device; the caller holds the lock.
 
-        Only the registration happens here; the history goes out in the upload pass.
+        Only the registration happens here; the action then starts the history push (:meth:`_async_push_new_history`).
 
         Raises:
             ValueError: The device is not withdrawn, or not eligible.
@@ -835,9 +876,9 @@ def upload_end(state: RegistrationState) -> datetime | None:
 def slot_accounting(state: RegistrationState | None, confirmed_through: datetime | None, start: datetime) -> str:
     """Return how the partner accounts the slot starting at ``start``.
 
-    The partner accounts its effective window ``[effectiveFrom, effectiveTo)``. Sent is not accounted, since the live
-    upload begins at the registration request, up to two days before ``effectiveFrom``, so the window is checked first
-    and the watermark second.
+    The partner accounts its effective window ``[effectiveFrom, effectiveTo)``, and a device still ``registering`` has
+    none yet. Sent is not accounted, since the live upload begins at the registration request, up to two days before
+    ``effectiveFrom``, so the status and the window are checked first and the watermark second.
 
     Args:
         state: The device's mirror row, or None for a device never recorded.
@@ -845,12 +886,12 @@ def slot_accounting(state: RegistrationState | None, confirmed_through: datetime
         start: The slot's opening mark.
 
     Returns:
-        ``SLOT_OUTSIDE`` for a device the partner is not sent, a slot before a known ``effectiveFrom`` or from
-            ``effectiveTo`` on; ``SLOT_ACCOUNTED`` for a slot inside the window that the partner confirmed;
-            ``SLOT_OWED`` for one inside the window still to be confirmed. An edge the mirror does not know yet does not
-            cut.
+        ``SLOT_OUTSIDE`` for a device that reads ``registering`` or that the partner is not sent, a slot before a known
+            ``effectiveFrom`` or from ``effectiveTo`` on; ``SLOT_ACCOUNTED`` for a slot inside the window that the
+            partner confirmed; ``SLOT_OWED`` for one inside the window still to be confirmed. An edge the mirror does
+            not know yet does not cut.
     """
-    if state is None or not is_uploaded(state):
+    if state is None or state.status == TENS_STATUS_REGISTERING or not is_uploaded(state):
         return SLOT_OUTSIDE
     if state.effective_from is not None and start < state.effective_from:
         return SLOT_OUTSIDE

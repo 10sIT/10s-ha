@@ -298,7 +298,12 @@ class TensClient:
             json={"registrationToken": token, "appInstanceId": app_instance_id},
         )
         if status == 400:
-            raise PartnerAuthError("10s refused the registration token")
+            detail = _detail(body)
+            _LOGGER.warning(
+                "10s %s refused the registration token (HTTP 400)%s", self._environment.name,
+                f": {detail}" if detail else "",
+            )
+            raise PartnerAuthError(f"10s refused the registration token{f': {detail}' if detail else ''}")
         if not 200 <= status < 300:
             raise _refusal(status, body)
         fields = body if isinstance(body, Mapping) else {}
@@ -534,20 +539,29 @@ def _decode(text: str) -> Any:
         return None
 
 
+def _detail(body: Any) -> str:
+    """Return the human-readable reason of an error body, "" when it has none.
+
+    10s answers errors as RFC 9457 problem details (``detail``, then ``title``); ``message`` / ``error`` cover other
+    shapes. The text is only logged or shown, never interpreted.
+    """
+    if not isinstance(body, Mapping):
+        return ""
+    return str(body.get("detail") or body.get("message") or body.get("error") or body.get("title") or "")
+
+
 def _refusal(status: int, body: Any) -> Exception:
     """Map a status the caller did not accept to the partner error it means, by status only.
 
     Args:
-        body: The decoded body; its ``error`` / ``message`` text is kept for the log and the service error, never
+        body: The decoded body; its text (see :func:`_detail`) is kept for the log and the service error, never
             interpreted.
 
     Returns:
         :class:`PartnerConnectionError` for ``5xx`` / ``429`` and anything outside 4xx, :class:`PartnerAuthError` for
         ``401``, else :class:`PartnerRejectedError`.
     """
-    detail = ""
-    if isinstance(body, Mapping):
-        detail = str(body.get("message") or body.get("error") or "")
+    detail = _detail(body)
     suffix = f": {detail}" if detail else ""
     if status >= 500 or status in _TRANSIENT_STATUSES or status < 400:
         return PartnerConnectionError(f"10s answered HTTP {status}{suffix}")

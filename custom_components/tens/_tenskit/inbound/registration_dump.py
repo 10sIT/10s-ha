@@ -1,9 +1,9 @@
 """Build the one-shot history a device is offered to 10s with when it is registered.
 
 It is read live from Home Assistant's statistics, never from the 72-hour archive: 5-minute buckets for what the
-recorder holds and hourly buckets for the last year. A series is sparse: a bucket with no reading has no entry and goes
-to 10s as ``null``, so an outage is never read as zero consumption. Only completed slots are sent, ending at the start
-of the slot in progress when the registration was first seen.
+recorder holds, each counter's oldest value left out, and hourly buckets for the last year. A series is sparse: a
+bucket with no reading has no entry and goes to 10s as ``null``, so an outage is never read as zero consumption. Only
+completed slots are sent, ending at the start of the slot in progress when the registration was first seen.
 """
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ class RegistrationDump:
     """Everything Home Assistant holds about one device's energy.
 
     Attributes:
-        fine: The 5-minute series over the recorder's short-term window.
+        fine: The 5-minute series over the recorder's short-term window, without each counter's oldest value.
         coarse: The hourly series over the long-term depth.
     """
 
@@ -126,6 +126,21 @@ def _as_values(buckets: Sequence[StatBucket]) -> dict[datetime, float]:
     }
 
 
+def _without_oldest(values: CounterValues) -> dict[datetime, float]:
+    """Return a counter's 5-minute values without the oldest one, whose energy cannot be trusted.
+
+    The recorder computes a row's ``change`` against the newest row with a ``sum`` before it, and against 0 when there
+    is none; a row without a ``sum`` has no ``change`` and is skipped (``_augment_result_with_change`` in
+    homeassistant/components/recorder/statistics.py, 2024.11.3 and 2026.11.1). Its purge deletes 5-minute rows older
+    than ``purge_keep_days`` and never hourly ones, so after a purge the oldest 5-minute row with a ``change`` has no
+    predecessor and carries the counter's whole cumulative sum. Its real energy is held nowhere, and a counter that
+    started within the purge cut-off's hour leaves rows identical to a genuine first row, so that value is always
+    withheld rather than guessed at: one 5-minute slot per counter is left out, and the hourly series still covers it.
+    """
+    oldest = min(values, default=None)
+    return {start: kwh for start, kwh in values.items() if start != oldest}
+
+
 async def async_build_dump(
     hass: Any,
     device: MeteredDevice,
@@ -155,7 +170,7 @@ async def async_build_dump(
     )
     return RegistrationDump(
         fine=build_series(
-            device, {e: _as_values(rows) for e, rows in fine_raw.items()}, PERIOD_FIVE_MINUTE, end,
+            device, {e: _without_oldest(_as_values(rows)) for e, rows in fine_raw.items()}, PERIOD_FIVE_MINUTE, end,
         ),
         coarse=build_series(
             device, {e: _as_values(rows) for e, rows in coarse_raw.items()}, PERIOD_HOUR, coarse_end,

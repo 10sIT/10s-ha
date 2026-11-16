@@ -37,8 +37,8 @@ class StatBucket:
 
     Attributes:
         start: The bucket's UTC start.
-        change: Energy inside the bucket in kWh; None when the recorder has a row but no usable value (present but
-            empty, not absent).
+        change: The bucket's ``change`` in kWh as the recorder computes it; None when the recorder has a row but no
+            usable value (present but empty, not absent).
     """
 
     start: datetime

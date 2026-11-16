@@ -22,7 +22,7 @@
       },
       "tens_login": {
         "title": "Log in to 10s",
-        "description": "Enter the registration token you received from 10s; it tells 10s which contract this installation belongs to. The token works once: 10s answers with this installation's credentials, which are saved straight away, so closing this window afterwards does not lose them.",
+        "description": "You are logging in to **10s {environment}**. Enter the registration token you received from 10s; it tells 10s which contract this installation belongs to. The token works once: 10s answers with this installation's credentials, which are saved straight away, so closing this window afterwards does not lose them.",
         "data": {
           "registration_token": "Registration token",
           "go_to": "On Confirm"
@@ -144,7 +144,7 @@
       },
       "reauth_confirm": {
         "title": "Log in to 10s again",
-        "description": "10s stopped accepting this installation's login for **{account}**. Readings are still being collected and will be sent once you log in again. Enter a new registration token from 10s. Your devices stay linked; they keep their 10s registration as long as 10s accepts the new token for this same installation.",
+        "description": "10s stopped accepting this installation's login for **{account}** (10s {environment}). Readings are still being collected and will be sent once you log in again. Enter a new registration token from 10s. Your devices stay linked; they keep their 10s registration as long as 10s accepts the new token for this same installation.",
         "data": {
           "registration_token": "Registration token"
         },
@@ -198,7 +198,7 @@
       },
       "tens_login": {
         "title": "Log in to 10s",
-        "description": "Enter the registration token you received from 10s; it tells 10s which contract this installation belongs to. The token works once: 10s answers with this installation's credentials, which are saved straight away, so closing this window afterwards does not lose them.",
+        "description": "You are logging in to **10s {environment}**. Enter the registration token you received from 10s; it tells 10s which contract this installation belongs to. The token works once: 10s answers with this installation's credentials, which are saved straight away, so closing this window afterwards does not lose them.",
         "data": {
           "registration_token": "Registration token",
           "go_to": "On Confirm"

@@ -3,5 +3,6 @@
   "homeassistant": "2024.11.0",
   "render_readme": true,
   "zip_release": true,
-  "filename": "tens.zip"
+  "filename": "tens.zip",
+  "country": "BE"
 }

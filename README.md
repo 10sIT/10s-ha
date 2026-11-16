@@ -9,8 +9,8 @@ A Home Assistant integration that meters devices and reports their energy to 10s
 
 **Requires Home Assistant 2024.11.0 or newer** (Python 3.12).
 
-> The integration talks to 10s's **production** environment (`https://api.10senergy.com`) unless told otherwise (see
-> *Using 10s's dev environment*), and verifies the certificates of both environments, which are publicly trusted.
+> The integration talks to 10s's **production** environment (`https://api.10senergy.com`) and verifies its
+> certificates, which are publicly trusted.
 
 ## What it does
 
@@ -20,33 +20,24 @@ controls a device. How it works is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE
 
 ## Setup
 
-1. Install through [HACS](https://hacs.xyz):
-   1. **HACS → ⋮ → Custom repositories.** Repository `https://github.com/10sIT/10s-ha`, type **Integration**, then
-      **Add**.
-   2. Search for **10s** in HACS, open it and choose **Download**.
-   3. Restart Home Assistant.
-2. **Settings → Devices & services → Add integration → 10s.**
-3. Open **10s account**, enter the registration token you received from 10s, and confirm. The token works once; 10s
+1. Add this repository to Home Assistant:
+
+   [![Open your Home Assistant instance and open this repository in the Marketplace.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=10sIT&repository=10s-ha&category=integration)
+
+   Or by hand:
+   - **Home Assistant 2026.11 or newer:** **Settings → Marketplace → Add from link**, repository
+     `https://github.com/10sIT/10s-ha`, type **Integration**. Home Assistant asks once to connect a GitHub account (any
+     free account); it uses it to read the repository and check for updates.
+   - **Older versions, with [HACS](https://hacs.xyz):** **HACS → ⋮ → Custom repositories**, repository
+     `https://github.com/10sIT/10s-ha`, type **Integration**, then **Add**.
+2. Open **10s**, choose **Download** (or **Install**), then **restart Home Assistant**. Restart again after each update:
+   until then Home Assistant keeps running the previous version.
+3. **Settings → Devices & services → Add integration → 10s.**
+4. Open **10s account**, enter the registration token you received from 10s, and confirm. The token works once; 10s
    answers with this installation's credentials, which are stored at once. The login identifies this Home Assistant to
    10s by its installation id, which is the same on every login.
-4. Under the account, open **Metered devices** and link each device: pick the Home Assistant device and its energy
+5. Under the account, open **Metered devices** and link each device: pick the Home Assistant device and its energy
    sensors. Go back to the menu and choose **Check and save**. Later changes are under **Configure**.
-
-## Using 10s's dev environment
-
-For testing against 10s's dev environment (`https://api.dev.10senergy.com`), add this to `configuration.yaml` and
-restart Home Assistant:
-
-```yaml
-tens:
-  environment: dev
-```
-
-- It applies to new logins only. A stored login keeps the environment it was issued in, as a registration token works
-  only where 10s issued it. To move an installation, log out (Configure → 10s account → Log out) and log in again.
-- Log in only after the restart has finished: until then the login form may still say production.
-- Without the block, or with `environment: production`, a new login goes to production. Any other value stops the
-  integration from loading and is logged.
 
 ## Using it
 
@@ -60,9 +51,10 @@ tens:
   and the chart without the buttons. They take the metered device id from the 10s Dashboard sensor's `metered_devices`
   attribute.
 - A registered device takes effect at 10s at midnight Brussels time, two days after the day it was registered; the
-  panel shows the date. Meanwhile its readings are kept. Once it takes effect, the next contact also sends 10s the
-  device's recorded history from Home Assistant's recorder statistics (whatever the recorder holds, at most one year;
-  nothing warns about a short one).
+  panel shows the date. Nothing waits for that date: right after 10s accepts the registration, the device's recorded
+  history goes to 10s from Home Assistant's recorder statistics (whatever the recorder holds, at most one year; nothing
+  warns about a short one), and its 15-minute readings go from the registration on, at each contact. A history that
+  does not get through goes at the next contact.
 - Home Assistant contacts 10s when it starts and then every 8 hours, and each contact sends everything owed since the
   last one. A contact that fails is not retried sooner: the next one sends what it missed.
 - The meters of every linked device are read every 5 minutes, whatever its status. Readings are kept for 72 hours, so an
@@ -105,7 +97,7 @@ its readings. Deleting removes this installation's stored registrations and its 
 |---|---|---|
 | *<device> has stopped reporting* | A device 10s holds (registering, registered or withdrawing) has had no meter reading for 2 hours | Check its energy sensor is available and the device is online. Clears itself. |
 | *<device>'s readings are not reaching 10s* | Uploads waiting for more than 20 hours (two missed contacts) | Check the internet connection; a refusal by 10s is logged as a warning. Clears itself. |
-| *10s will not take <device>'s recorded history* | 10s refused the recorded history four times (the first offer and three retries, one per contact); it is not offered again | Live readings are unaffected. To resend it: fix the cause (the refusal is logged as a warning), withdraw the device and, once it reads withdrawn, register it again — a new registration offers its history afresh. Clears when the device is withdrawn or removed. |
+| *10s will not take <device>'s recorded history* | 10s refused the recorded history four times (the offer at registration and three retries, one per contact); it is not offered again | Live readings are unaffected. To resend it: fix the cause (the refusal is logged as a warning), withdraw the device and, once it reads withdrawn, register it again — a new registration offers its history afresh. Clears when the device is withdrawn or removed. |
 | Re-authentication required | 10s no longer accepts the stored credentials | Follow the prompt and enter a new registration token. Readings are still being collected, and those still within the 72 hours kept are sent once the new login works; devices stay linked and keep their 10s registration as long as 10s accepts the token for this installation. |
 
 **Diagnostics:** Settings → Devices & services → 10s → ⋮ → *Download diagnostics*. The file lists the stored
@@ -118,4 +110,4 @@ tokens are redacted. Attach it when reporting an issue.
 
 ## License
 
-Copyright (c) 2026 10s-Energy. All rights reserved. See [`LICENSE`](LICENSE).
+Copyright 2026 10s-Energy. Licensed under the [Apache License 2.0](LICENSE).

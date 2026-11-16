@@ -19,11 +19,7 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          # brands: the integration domain is not registered in home-assistant/brands.
-          # Temporary, documented exception -- remove once the domain is submitted upstream.
-          # license: the license is "all rights reserved", which has no SPDX identifier.
-          # HACS installs from a custom repository without one; its default store would not.
-          ignore: brands license
+          # No check is ignored: the catalog (hacs/default) requires this job to pass as it is.
 
   hassfest:
     name: hassfest

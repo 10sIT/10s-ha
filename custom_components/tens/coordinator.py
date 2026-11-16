@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Coroutine, Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -127,6 +127,7 @@ class TensCoordinator(DataUpdateCoordinator):
             client=environment.make_client(hass, self.environment),
             request_refresh=self._async_request_refresh,
             update_options=self._async_update_entry_options,
+            start_job=self._start_job,
             hass=hass,
         )
 
@@ -140,6 +141,19 @@ class TensCoordinator(DataUpdateCoordinator):
     def _read_options(self) -> Mapping[str, Any]:
         """Return the entry's options, where the account and the devices live (its data is empty)."""
         return self._entry.options
+
+    def _start_job(self, job: Coroutine[Any, Any, None]) -> None:
+        """Run a runtime job as the entry's background task, cancelled with the entry; drop it once unloaded.
+
+        A job writes the registration mirror, so it may live no longer than this coordinator. A register that was
+        waiting on 10s while the entry reloaded would otherwise add its job to the reloaded entry, beside the new
+        coordinator writing the same store. Dropped, the history stays owed and the new coordinator's contact offers it.
+        """
+        if self.hass.data.get(DOMAIN) is not self:
+            job.close()
+            _LOGGER.debug("The entry was reloaded during a register; its history goes at the next contact")
+            return
+        self._entry.async_create_background_task(self.hass, job, f"{DOMAIN}: history push")
 
     async def _async_request_refresh(self) -> None:
         """Show an action's result now: re-check the repairs and update the entities, without contacting 10s."""
