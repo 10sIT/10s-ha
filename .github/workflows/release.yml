@@ -4,6 +4,10 @@ name: Release
 # (the content of custom_components/tens, which hacs.json names) and creates the
 # GitHub release HACS installs from. A tag with a hyphen (v0.2.0-beta.1) is a
 # pre-release, shown in HACS only to users who enable beta versions.
+#
+# The release is created only once validate.yml (HACS + hassfest) has passed on
+# the same commit, which the HACS catalog requires: the publishing workflow pushes
+# the branch (starting validate.yml) just before the tag (starting this one).
 
 on:
   push:
@@ -11,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   release:
@@ -18,6 +23,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Wait for a green validation of this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for _ in $(seq 1 40); do
+            run=$(gh run list --workflow validate.yml --commit "$GITHUB_SHA" --limit 1 \
+              --json status,conclusion,url --jq '.[0] // empty')
+            if [[ -n "$run" && "$(jq -r .status <<<"$run")" == completed ]]; then
+              if [[ "$(jq -r .conclusion <<<"$run")" == success ]]; then
+                echo "Validation green: $(jq -r .url <<<"$run")"
+                exit 0
+              fi
+              echo "::error::Validation failed on $GITHUB_SHA: $(jq -r .url <<<"$run")"
+              exit 1
+            fi
+            echo "Waiting for validate.yml on $GITHUB_SHA"
+            sleep 30
+          done
+          echo "::error::No finished validation of $GITHUB_SHA after 20 minutes"
+          exit 1
       - name: Build tens.zip
         working-directory: custom_components/tens
         run: zip -r -q "$GITHUB_WORKSPACE/tens.zip" .
