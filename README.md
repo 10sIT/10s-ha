@@ -101,8 +101,9 @@ its readings. Deleting removes this installation's stored registrations and its 
 | Re-authentication required | 10s no longer accepts the stored credentials | Follow the prompt and enter a new registration token. Readings are still being collected, and those still within the 72 hours kept are sent once the new login works; devices stay linked and keep their 10s registration as long as 10s accepts the token for this installation. |
 
 **Diagnostics:** Settings → Devices & services → 10s → ⋮ → *Download diagnostics*. The file lists the stored
-configuration, the account and the devices as the panel sees them; the client secret, client id, app instance id and
-tokens are redacted. Attach it when reporting an issue.
+configuration, the account and the devices as the panel sees them. Credentials and every identifier of your 10s account
+and contract (account id, contract id and reference, client id, app instance id, tokens) are redacted. Attach it when
+reporting an issue; if 10s needs your contract reference, it asks you privately.
 
 ## Documentation
 

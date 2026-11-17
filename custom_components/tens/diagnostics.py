@@ -12,9 +12,12 @@ from .coordinator import TensCoordinator
 
 REDACTED = "**REDACTED**"
 
-# ``client_id`` and ``app_instance_id`` are redacted because 10s can tie them to the account;
-# ``contract_id`` / ``contract_ref`` stay as the support handle.
-_SECRET_KEYS = frozenset({"client_secret", "client_id", "app_instance_id", "registration_token", "access_token"})
+# Credentials, and every identifier of the user's 10s account and contract: the file is attached to public issues.
+# Support asks the user for the contract reference privately.
+_SECRET_KEYS = frozenset({
+    "client_secret", "client_id", "app_instance_id", "registration_token", "access_token",
+    "account_id", "contract_id", "contract_ref",
+})
 
 
 def _redact(value: Any) -> Any:
